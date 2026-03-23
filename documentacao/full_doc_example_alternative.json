@@ -1,0 +1,92 @@
+{
+  "version": "1.0",
+  "generated_at": "ISO-8601-UTC",
+
+  "devices": [
+    {
+      "id": "uuid",
+      "category": "switch",
+      "management_ip": "10.10.0.35",
+
+      "base": {
+        "hostname": "SW-01",
+        "fqdn": null,
+        "description": "Vendor OS 1.0",
+        "location": "DC1-Rack12",
+        "vendor": "cisco",
+        "model": "C2960X",
+        "firmware": "15.2(2)E"
+      },
+
+      "services": {
+        "snmp": {
+          "enabled": true,
+          "version": "v2c",
+          "agent_ip": "10.10.0.35"
+        },
+        "ssh": {
+          "enabled": true,
+          "port": 22
+        },
+        "http": {
+          "enabled": false
+        },
+        "https": {
+          "enabled": true,
+          "port": 443
+        }
+      },
+
+      "vlans": [
+        {
+          "id": 10,
+          "name": "Users"
+        }
+      ],
+
+      "interfaces": [
+        {
+          "id": 1,
+          "name": "Gi0/1",
+          "alias": "Uplink-Core",
+          "type": "ethernetCsmacd",
+          "scope": "physical",
+
+          "mac": "00:11:22:33:44:55",
+
+          "admin_status": "up",
+          "oper_status": "up",
+
+          "untagged_vlan": 10,
+          "tagged_vlans": [20, 30]
+        }
+      ],
+
+      "stp": {
+        "mode": "rstp",
+        "bridge_id": "32768.001122334455",
+        "root_bridge_id": "32768.001122334400",
+        "is_root": false
+      },
+
+      "lldp": {
+        "enabled": true,
+        "chassis_id": "00:11:22:33:44:55"
+      }
+    }
+  ],
+
+  "links": [
+    {
+      "id": "uuid",
+      "type": "l2",
+      "protocol": "lldp",
+
+      "local_device": "uuid-device-1",
+      "local_interface": 1,
+
+      "remote_device": "uuid-device-2",
+      "remote_interface": 24
+    }
+  ]
+}

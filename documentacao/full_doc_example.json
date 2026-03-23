@@ -1,0 +1,97 @@
+{
+    "Switch": [
+        {
+            "id": "hash",
+            "Base Info": {
+                "System Name": "mib2.sysName.0",
+                "System FQDN": "{fqdn} | {empty}",
+                "System Description": "mib-2.sysDescr.0",
+                "System Location": "mib-2.sysLocation.0",
+                "System Model": "{mapped} -> mib-2.sysObjectID.0",
+                "System Vendor": "{mapped} -> mib-2.sysObjectID.0",
+                "System Firmware": ""
+            },
+            "Service": {
+                "SNMP": {
+                    "Available": "True | False",
+                    "SNMP Version": "v2c | v3",
+                    "SNMP Agent Interface": "{agent ip address} | {empty}"
+                },
+                "SSH": {
+                    "Available": "True | False",
+                    "SSH Port": "{tcp.port}",
+                    "SSH Server Interface": "{ssh server ip address} | {empty}"
+                },
+                "HTTP": {
+                    "Available": "True | False",
+                    "HTTP Port": "{tcp.port}",
+                    "HTTP Server Interface": "{http server ip address} | {empty}"
+                },
+                "HTTPS": {
+                    "Available": "True | False",
+                    "HTTP Port": "{tcp.port}",
+                    "HTTPS Server Interface": "{https server ip address} | {empty}"
+                }
+            },
+            "VLAN": [
+                {
+                    "VLAN ID": "{vlanStaticEntry index}",
+                    "VLAN Name": "qBridgeMIB.qBridgeMIBObjects.dot1qVlan.dot1qVlanStaticTable.dot1qVlanStaticEntry.index"
+                }
+            ],
+            "Interfaces": {
+                "Total Physical Ports": "{if phys count}",
+                "Interface List": [
+                    {
+                        "Interface ifIndex": "mib-2.interface.ifTable.ifEntry.ifIndex",
+                        "Interface Description": "mib-2.ifMIB.ifMIBObjects.ifXTable.ifXEntry.ifName.ifIndex",
+                        "Interface Alias": " mib-2.ifMIB.ifMIBObjects.ifXTable.ifXEntry.ifAlias.ifIndex",
+                        "Interface Type": {
+                            "Descr": "{mapped IANA Type} -> mib-2.interface.ifTable.ifEntry.ifType.ifIndex",
+                            "Scope": "Port | VLAN Interface | Tunnel | LAG | Other"
+                        },
+                        "Interface Physical Address": "mib-2.interface.ifTable.ifEntry.ifPhysAddress.ifIndex",
+                        "PVID": "pvid",
+                        "VLAN Untagged": ["vid list"],
+                        "VLAN Tagged": ["vid list"]
+                    }
+                ]
+            },
+            "IPv4": [
+              {
+                "Interface": "",
+                "Address": "",
+                "Netmask": "",
+                "Nexthop": ""
+              }
+            ],
+            "Spanning Tree": {
+                "Mode": "{STP | RSTP | PVSTP | Disabled | Unsupported}",
+                "Bridge ID": "",
+                "Root Bridge ID": "",
+                "": ""
+            },
+            "LLDP": {
+                "Status": "{Enabled | Disabled | Unsupported}",
+                "LLDP Chassis ID": "",
+                "LLDP Chassis ID Subtype": ""
+            },
+            "L2 Neighbors": [
+              {
+                "ID": "entry id",
+                "Local Port": "",
+                "Remote Device": "",
+                "Remote Port": ""
+              }
+            ]
+        }
+    ],
+    "Access Point": [],
+    "Firewall": [],
+    "Server": [],
+    "Printer" : [],
+    "Rack": [],
+    "Patch Panel": [],
+    "Network Outlet": []
+
+}
