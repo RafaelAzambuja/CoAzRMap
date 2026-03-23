@@ -1,4 +1,4 @@
-from .base import Switch
+from .base_switch import Switch
 
 class Dell(Switch):
     vendor = "Dell"

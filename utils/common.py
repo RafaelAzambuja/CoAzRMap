@@ -1,5 +1,15 @@
 import re
 
+
+def normalize_snmp_string(value : str) -> str:
+        """
+
+        """
+        if not value:
+            return ""
+
+        return value.strip('"')
+
 def convert_port_list(port_list: list) -> list:
     res = ""
     offset = 1

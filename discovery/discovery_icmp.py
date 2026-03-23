@@ -1,7 +1,7 @@
 import ipaddress
 from subprocess import call, DEVNULL
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from file_handler import ConfigFile
+from utils.file_handler import ConfigFile
 
 
 def _test_icmp_host(ip: str, timeout: int) -> bool:

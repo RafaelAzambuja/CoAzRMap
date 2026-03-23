@@ -1,4 +1,4 @@
-from .base import Switch
+from .base_switch import Switch
 from utils.common import fix_port_list, convert_hex_to_utf8
 
 class Dlink(Switch):

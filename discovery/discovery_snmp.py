@@ -1,4 +1,4 @@
-from file_handler import ConfigFile
+from utils.file_handler import ConfigFile
 from subprocess import run
 
 
@@ -49,6 +49,7 @@ class SNMPMgmt:
 
                 if self.validate_snmp(output.stdout, output.returncode):
 
+                    self.version = "v2c"
                     self.vendor_oid = output.stdout.split()[3]
 
                     self.get_command = base_cmd.copy()

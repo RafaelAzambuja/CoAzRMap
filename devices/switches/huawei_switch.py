@@ -1,4 +1,4 @@
-from .base import Switch
+from .base_switch import Switch
 from utils.common import convert_hex_to_oid
 
 class Huawei(Switch):

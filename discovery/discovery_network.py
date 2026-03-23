@@ -1,7 +1,7 @@
 import time
 import ipaddress
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from file_handler import ConfigFile
+from utils.file_handler import ConfigFile
 from discovery.discovery_icmp import poll_icmp_active_hosts
 from discovery.discovery_snmp import SNMPMgmt
 from discovery.discovery_ssh import test_ssh_on_host
@@ -87,10 +87,10 @@ class DiscoveryEngine:
 
         result: list[str] = []
 
-        for entry in ip_address_list.split():
+        for entry in set(ip_address_list.split()):
             try:
-                ipaddress.IPv4Network(entry, strict=True)
-                result.append(str(entry))
+                network = ipaddress.IPv4Network(entry, strict=True)
+                result.append(str(network))
 
             except ValueError:
                 raise ValueError(f"Invalid IPv4 address or subnet: {entry}")
@@ -162,7 +162,7 @@ class DiscoveryEngine:
                 }
 
         elapsed = time.perf_counter() - start
-        print(f"[DEBUG] Alive hosts in {subnet}: {alive_hosts}")
+        #print(f"[DEBUG] Alive hosts in {subnet}: {alive_hosts}")
         print(f"[INFO] ICMP polling took {elapsed:.3f} seconds")
 
         return hosts

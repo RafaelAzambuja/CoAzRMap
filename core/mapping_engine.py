@@ -1,35 +1,45 @@
 import time
 from discovery.discovery_network import DiscoveryEngine
-from factory import create_device
-from file_handler import ConfigFile, JsonFile
+from devices.factory import create_device
+from utils.file_handler import ConfigFile, JsonFile
 
 
 class MappingEngine:
 
     def __init__(self, cfg_file: ConfigFile):
         
-        self.cfg = cfg_file
+        cfg_file = ConfigFile()
         self.discovery_engine = DiscoveryEngine(cfg_file)
         self.json_file = JsonFile(
-            self.cfg.read_cfg_file("output", "json")
+            cfg_file.read_cfg_file("output", "json")
         )
-        self.topology = {}
+        #self.topology = {}
 
     def run_full_documentation(self) -> None:
 
-        print("Note: Host documentation depends on SNMP.")
+        '''
+        Workflow:
+        1. Obtain IP address list
+        2. Validate addresses
+        3. Discover alive hosts (icmp, snmp, ssh, http)
+        4. Create device (type->vendor->model)
+        5. Build Documentation
+        '''
 
+        # 1 & 2
         ip_address_list = self.discovery_engine._get_subnets_from_user()
         if not ip_address_list:
             return
 
+        # 3
         hosts = self.discovery_engine.discover(ip_address_list)
 
         if not hosts:
             print("[INFO] No reachable hosts discovered.")
             return
 
-        devices = self._create_devices(hosts)
+        # 4
+        devices = create_device(hosts)
 
         if not devices:
             print("[INFO] No SNMP-capable devices found.")
@@ -41,33 +51,33 @@ class MappingEngine:
 
         self.build_topology(devices)
 
-    def _create_devices(self, hosts: dict) -> list:
+    # def _create_devices(self, hosts: dict) -> list:
 
-        devices = []
+    #     devices = []
 
-        for ip, services in hosts.items():
+    #     for ip, services in hosts.items():
 
-            snmp_obj = services.get("snmp")
+    #         snmp_obj = services.get("snmp")
 
-            if not snmp_obj:
-                continue
+    #         if not snmp_obj:
+    #             continue
 
-            device = create_device(
-                None,
-                snmp_obj.vendor_oid,
-                snmp_obj
-            )
+    #         device = create_device(
+    #             None,
+    #             snmp_obj.vendor_oid,
+    #             snmp_obj
+    #         )
 
-            if device:
-                print(
-                    f"[DEBUG] Created host: "
-                    f"{device.snmp.agent_interface}, "
-                    f"Vendor: {device.vendor}, "
-                    f"Model: {device.model}"
-                )
-                devices.append(device)
+    #         if device:
+    #             print(
+    #                 f"[DEBUG] Created host: "
+    #                 f"{device.snmp.agent_interface}, "
+    #                 f"Vendor: {device.vendor}, "
+    #                 f"Model: {device.model}"
+    #             )
+    #             devices.append(device)
 
-        return devices
+    #     return devices
 
     def _collect_base_information(self, devices: list) -> None:
 
@@ -84,7 +94,7 @@ class MappingEngine:
 
             print(f"[DEBUG] Polling {device.snmp.agent_interface}")
 
-            device._build_data()
+            device.build_base_data()
 
             self.json_file.add_to_category(
                 device.host_category,
@@ -98,48 +108,48 @@ class MappingEngine:
             f"Elapsed time: {elapsed:.3f} seconds"
         )
 
-    def build_topology(self, devices: list) -> None:
+    # def build_topology(self, devices: list) -> None:
 
-        print("[INFO] Collecting LLDP neighbor information...")
-        start_time = time.perf_counter()
+    #     print("[INFO] Collecting LLDP neighbor information...")
+    #     start_time = time.perf_counter()
 
-        json_data = self.json_file._load_data()
-        switch_list = json_data.get("Switch", [])
+    #     json_data = self.json_file._load_data()
+    #     switch_list = json_data.get("Switch", [])
 
-        for device in devices:
+    #     for device in devices:
 
-            if device.host_category != "Switch":
-                continue
+    #         if device.host_category != "Switch":
+    #             continue
 
-            neighbors = device.lldp_get_remote_entry_list()
+    #         neighbors = device.lldp_get_remote_entry_list()
 
-            if not neighbors:
-                continue
+    #         if not neighbors:
+    #             continue
 
-            neighbor_list = []
+    #         neighbor_list = []
 
-            for local_port, remote_data in neighbors.items():
-                neighbor_list.append({
-                    "local_port": local_port,
-                    "remote_host": remote_data.get("Remote Host"),
-                    "remote_port": remote_data.get("Remote Port")
-                })
+    #         for local_port, remote_data in neighbors.items():
+    #             neighbor_list.append({
+    #                 "local_port": local_port,
+    #                 "remote_host": remote_data.get("Remote Host"),
+    #                 "remote_port": remote_data.get("Remote Port")
+    #             })
 
-            device.data["Neighbors"] = neighbor_list
+    #         device.data["Neighbors"] = neighbor_list
 
-            for sw in switch_list:
-                if sw.get("Host SNMP Agent Interface") == device.snmp.agent_interface:
-                    sw["Neighbors"] = neighbor_list
-                    break
+    #         for sw in switch_list:
+    #             if sw.get("Host SNMP Agent Interface") == device.snmp.agent_interface:
+    #                 sw["Neighbors"] = neighbor_list
+    #                 break
 
-        json_data["Switch"] = switch_list
+    #     json_data["Switch"] = switch_list
         
-        self.json_file.save_all(json_data)
+    #     self.json_file.save_all(json_data)
 
-        elapsed = time.perf_counter() - start_time
-        print(f"[INFO] LLDP info collected. Elapsed time: {elapsed:.3f} seconds")
+    #     elapsed = time.perf_counter() - start_time
+    #     print(f"[INFO] LLDP info collected. Elapsed time: {elapsed:.3f} seconds")
 
-    def _save_topology(self):
-        json_data = self.json_file._load_data()
-        json_data["Topology"] = self.topology
-        self.json_file._save_data(json_data)
+    # def _save_topology(self):
+    #     json_data = self.json_file._load_data()
+    #     json_data["Topology"] = self.topology
+    #     self.json_file._save_data(json_data)

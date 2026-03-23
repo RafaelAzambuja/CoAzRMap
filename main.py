@@ -1,33 +1,34 @@
 import time
 import json
-from file_handler import ConfigFile, JsonFile, CSVFile
+from utils.file_handler import ConfigFile, JsonFile, CSVFile
 from core.mapping_engine import MappingEngine
+from discovery.discovery_network import DiscoveryEngine
 
-Graph = dict[str, dict[str, dict]]
+# Graph = dict[str, dict[str, dict]]
 
-def get_device_macs(data : list) -> list:
+# def get_device_macs(data : list) -> list:
 
-    local_macs = {}
+#     local_macs = {}
 
-    for item in data.get("Switch", []):
-        local_ip = item["Host SNMP Agent Interface"]
-        local_macs.setdefault(local_ip, [])
+#     for item in data.get("Switch", []):
+#         local_ip = item["Host SNMP Agent Interface"]
+#         local_macs.setdefault(local_ip, [])
 
-        for ipentry in item["IP Addresses"]["IPv4"]:
-            mac_address = ipentry.get("MAC Address")
-            ip_address = ipentry.get("Address")
+#         for ipentry in item["IP Addresses"]["IPv4"]:
+#             mac_address = ipentry.get("MAC Address")
+#             ip_address = ipentry.get("Address")
 
-            if mac_address \
-                and mac_address != "00:00:00:00:00:00" \
-                and ip_address \
-                and ip_address != "127.0.0.1":
+#             if mac_address \
+#                 and mac_address != "00:00:00:00:00:00" \
+#                 and ip_address \
+#                 and ip_address != "127.0.0.1":
 
-                local_macs[local_ip].append({
-                        "Address": ip_address,
-                        "MAC": mac_address
-                    })
+#                 local_macs[local_ip].append({
+#                         "Address": ip_address,
+#                         "MAC": mac_address
+#                     })
 
-    return local_macs
+#     return local_macs
 
 
 def show_menu():
@@ -43,6 +44,7 @@ def mapping_menu():
     print("""
 Option:
     1  - (FULL) Switch and AP documentation
+    2  - Find Host L2 Uplink
     0  - Return
 """)
 
@@ -56,6 +58,7 @@ Option:
 def debug_menu():
     print("""
 Option:
+    1  - Check OID
     0  - Exit
 """)
 
@@ -105,6 +108,15 @@ if __name__ == "__main__":
                             # elapsed_time = elapsed_time_info + elapsed_time_neighbor
                             # print(f"[INFO] Done. Mapping took {elapsed_time:.3f} seconds")
 
+                        case '2':
+                            # To do
+                            # validar e organizar
+                            cfg_file = ConfigFile()
+                            client_mac = input("MAC: ")
+                            mapping_engine = MappingEngine(cfg_file)
+                            #device_source_opt = input("M")
+
+
                         case '0':
                             print("Returning...")
                             break
@@ -144,17 +156,38 @@ if __name__ == "__main__":
             #             case _:
             #                 print("Invalid Option")
                     
-            # case '3':
-            #     while True:
-            #         debug_menu()
-            #         debug_opt = input("Option: ").strip()
-            #         match debug_opt:
-            #             case '0':
-            #                 print("Returning...")
-            #                 break
+            case '3':
+                while True:
+                    debug_menu()
+                    debug_opt = input("Option: ").strip()
+                    match debug_opt:
 
-            #             case _:
-            #                 print("Invalid Option")
+                        case '1':
+                            # cfg_file = ConfigFile()
+                            # discovery_engine = DiscoveryEngine(cfg_file)
+                            # ip_address_list = discovery_engine._get_subnets_from_user()
+
+                            # if not ip_address_list:
+                            #     return
+
+                            # hosts = discovery_engine.discover(ip_address_list)
+
+                            # if not hosts:
+                            #     print("[INFO] No reachable hosts discovered.")
+                            #     return
+
+                            # devices = ._create_devices(hosts)
+
+                            # if not devices:
+                            #     print("[INFO] No SNMP-capable devices found.")
+                            #     return
+                            break
+                        case '0':
+                            print("Returning...")
+                            break
+
+                        case _:
+                            print("Invalid Option")
 
             case '0':
                 print("Exiting...")
