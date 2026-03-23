@@ -1,0 +1,11 @@
+src/
+│
+├── core/
+│     ├── menu.py
+│     ├── 
+│     └── 
+├── discovery/
+│     ├── discovery_icmp.py
+│     └── 
+├── config.ini
+└── main.py
