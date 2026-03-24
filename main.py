@@ -22,9 +22,15 @@ if __name__ == "__main__":
                     match mapping_menu_option:
                         case '1':
                             disc_eng = DiscoveryEngine(cfg_file)
-                            print(disc_eng.discover_services(disc_eng.get_subnets_from_user()))
-                            pass
-
+                            subnets = disc_eng.get_subnets()
+                            hosts = disc_eng.discover_services(subnets)
+                            print(f"total alive hosts: {len(hosts.items())}")
+                            for host_ip, host_info in hosts.items():
+                                snmp_object = host_info['snmp']
+                                if snmp_object:
+                                    print(f"Host IP: {host_ip}, Vendor OID: {snmp_object.vendor_oid}")
+                                else:
+                                    print(f"Host IP: {host_ip}, no snmp")
                         case '0':
                             print("Returning...")
                             break
