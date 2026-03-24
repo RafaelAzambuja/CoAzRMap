@@ -2,10 +2,11 @@ src/
 │
 ├── core/
 │     ├── menu.py
-│     ├── 
+│     ├── file_handler.py
 │     └── 
 ├── discovery/
 │     ├── discovery_icmp.py
-│     └── 
+│     ├── discovery_network.py
+│     └── discovery_snmp.py
 ├── config.ini
 └── main.py
