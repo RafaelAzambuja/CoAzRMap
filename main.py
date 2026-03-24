@@ -1,5 +1,6 @@
 from core.menu import show_menu, show_mapping_menu, read_menu_input
 from core.file_handler import ConfigFile
+from core.mapper import MapEngine
 from discovery.discovery_network import DiscoveryEngine
 
 
@@ -21,9 +22,8 @@ if __name__ == "__main__":
                     mapping_menu_option = read_menu_input()
                     match mapping_menu_option:
                         case '1':
-                            disc_eng = DiscoveryEngine(cfg_file)
-                            subnets = disc_eng.get_subnets()
-                            hosts = disc_eng.discover_services(subnets)
+                            map_engine = MapEngine(cfg_file)
+                            hosts = map_engine.run_documentation()
                             print(f"total alive hosts: {len(hosts.items())}")
                             for host_ip, host_info in hosts.items():
                                 snmp_object = host_info['snmp']

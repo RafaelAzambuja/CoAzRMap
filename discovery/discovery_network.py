@@ -8,25 +8,11 @@ from discovery.discovery_snmp import SNMPMgmt
 
 
 class DiscoveryEngine:
-    """ Network discovery engine responsible for:
-
-    1. Collecting target subnets from the user
-    2. Discovering alive hosts via ICMP
-    3. Probing discovered hosts for services (SNMP, SSH, etc.)
-
-    The engine performs ICMP scanning sequentially and service probing
-    concurrently using a thread pool.
+    """
     """
 
     def __init__(self, cfg_file : ConfigFile):
-        """ Initialize the discovery engine.
-
-        Args:
-            cfg_file (ConfigFile): Configuration file handler instance.
-                Used to retrieve runtime options (e.g., max_threads).
-
-        Notes:
-            The number of worker threads is clamped between 1 and 128.
+        """ 
         """
 
         self.max_threads = max(1, min(128, int(cfg_file.read_cfg_file("options", "max_threads", fallback="10"))))
@@ -34,24 +20,7 @@ class DiscoveryEngine:
 
     def get_subnets(self, subnets_input = None) -> list[str]:
         
-        """ Prompt the user to enter one or more IPv4 addresses and/or subnets.
-
-        The user is repeatedly prompted until valid input is provided.
-        Entries must be whitespace-separated and may be either:
-
-        - IPv4 address (e.g., 192.168.1.10)
-        - IPv4 subnet in CIDR notation (e.g., 192.168.1.0/24)
-
-        Example:
-            192.168.0.0/24 172.16.230.2 10.23.0.0/16
-
-        Returns:
-            list[str]: A list of validated IPv4 networks in CIDR notation.
-                       Single IP addresses are normalized to /32 networks.
-
-        Raises:
-            No exceptions are propagated. Validation errors are caught
-            and the user is prompted again.
+        """
         """
 
         while True:
@@ -69,21 +38,6 @@ class DiscoveryEngine:
 
     def _validate_subnets(self, ip_address_list: str) -> list[str]:
         """
-        Validate a whitespace-separated string of IPv4 or IPv6 addresses/subnets.
-
-        Each entry may be:
-            - A valid IPv4 or IPv6 address
-            - A valid IPv4 or IPv6 network in CIDR notation (strict mode)
-
-        Args:
-            ip_address_list (str): Whitespace-separated IP addresses or subnets.
-
-        Returns:
-            list[str]: Normalized networks in CIDR notation.
-                    Single IPs are converted to /32 (IPv4) or /128 (IPv6) networks.
-
-        Raises:
-            ValueError: If any entry is not a valid IP address or subnet.
         """
 
         # Time complexity: O(n log n)
