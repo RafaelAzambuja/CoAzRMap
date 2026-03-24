@@ -1,6 +1,6 @@
 from core.file_handler import ConfigFile
 from core.devices.factory import create_device
-from discovery.discovery_network import DiscoveryEngine
+from .discovery.discovery_network import DiscoveryEngine
 
 
 class MapEngine:
@@ -21,6 +21,6 @@ class MapEngine:
 
         hosts = create_device(host_service_dict)
 
-        return host_service_dict
+        return hosts
     
   

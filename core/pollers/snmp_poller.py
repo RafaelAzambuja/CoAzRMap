@@ -1,9 +1,24 @@
-from ...utils.common import normalize_snmp_string
 from ..discovery.discovery_snmp import SNMPMgmt
 
 class SNMPPoller:
 
-    def baseInfo_get_sysName(snmp_obj : SNMPMgmt) -> str:
+    def __init__(self, snmp_obj : SNMPMgmt):
+
+        if not snmp_obj:
+            raise RuntimeError("SNMP failed")
+        
+        self.snmp_obj = snmp_obj
+
+    def _normalize_snmp_string(value : str) -> str:
+            """
+
+            """
+            if not value:
+                return ""
+
+            return value.strip('"')
+
+    def baseInfo_get_sysName(self) -> str:
         """
         Get system name via SNMP GET (mib-2.system.sysName.0)
 
@@ -11,9 +26,9 @@ class SNMPPoller:
         """
         
         sysName_oid = ".1.3.6.1.2.1.1.5.0"
-        value = snmp_obj.snmpget(sysName_oid)
+        value = self.snmp_obj.snmpget(sysName_oid)
 
         if value[1] == "STRING":
-            return normalize_snmp_string(value[0])
+            return self._normalize_snmp_string(value[0])
 
         return value[0]

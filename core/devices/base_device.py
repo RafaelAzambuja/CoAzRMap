@@ -1,16 +1,14 @@
-import pollers.snmp_poller as snmp_poller
+from ..pollers.snmp_poller import SNMPPoller
 
 class BaseHost:
     
-    def __init__(self, snmp = None):
-        
-        if not snmp:
-            return None
+    def __init__(self, snmp = None, ssh = None):
         
         self.host_category : str = "Unknown"
-        self.vendor : str = snmp.vendor_oid
+        self.vendor : str = snmp.vendor_oid or None
         self.model : str = snmp.vendor_oid
         self.snmp = snmp
+        self.ssh = ssh
 
     def baseInfo_get_sysName(self) -> str:
         """
@@ -18,8 +16,12 @@ class BaseHost:
 
         # Unknow vendor = No fallback to SSH, HTTP, etc.
         try:
-            poller_snmp = snmp_poller.SNMPPoller()
-            sys_name = poller_snmp.baseInfo_get_sysName(self.snmp)
+            poller_snmp = SNMPPoller(self.snmp)
+            sys_name = poller_snmp.baseInfo_get_sysName()
+
+        # except:
+            # poller_ssh = ...
+            # sys_name = poller_ssh.baseInfo_get_sysName(self.ssh)
 
         finally:
             return sys_name

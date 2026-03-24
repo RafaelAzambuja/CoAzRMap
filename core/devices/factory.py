@@ -1,15 +1,15 @@
 from ..discovery.discovery_snmp import SNMPMgmt
-from base_device import BaseHost
-from devices.cisco.cisco_base import *
-from devices.dell.dell_base import *
-from devices.dlink.dlink_base import *
-from devices.hp.hp_base import *
-from devices.hpe.hpe_base import *
-from devices.huawei.huawei_base import *
-from devices.tplink.tplink_base import *
+from .base_device import BaseHost
+from .cisco.cisco_base import *
+from .dell.dell_base import *
+from .dlink.dlink_base import *
+from .hp.hp_base import *
+from .hpe.hpe_base import *
+from .huawei.huawei_base import *
+from .tplink.tplink_base import *
 
 
-def create_device(self, hosts: dict) -> list:
+def create_device(hosts: dict) -> list:
 
     devices = []
 

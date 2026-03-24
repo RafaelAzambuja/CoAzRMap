@@ -2,8 +2,8 @@ import time
 import ipaddress
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from core.file_handler import ConfigFile
-from discovery.discovery_icmp import poll_icmp_active_hosts
-from discovery.discovery_snmp import SNMPMgmt
+from .discovery_icmp import poll_icmp_active_hosts
+from .discovery_snmp import SNMPMgmt
 # from discovery.discovery_ssh import test_ssh_on_host
 
 

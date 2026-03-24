@@ -1,4 +1,4 @@
-from base_device import BaseHost
+from ..base_device import BaseHost
 
 class TplinkBase(BaseHost):
     vendor = "TP-Link"

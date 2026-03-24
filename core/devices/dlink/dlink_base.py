@@ -1,5 +1,5 @@
-from base_device import BaseHost
-from utils.common import fix_port_list, convert_hex_to_utf8
+from ..base_device import BaseHost
+# from utils.common import fix_port_list, convert_hex_to_utf8
 
 class DlinkBase(BaseHost):
     vendor = "D-Link"
