@@ -1,4 +1,5 @@
 from core.file_handler import ConfigFile
+from core.devices.factory import create_device
 from discovery.discovery_network import DiscoveryEngine
 
 
@@ -12,9 +13,14 @@ class MapEngine:
         
         # Workflow:
         # 1. Obtain IP Address list
-        # 2. Obtain dict of available services
+        # 2. Obtain dict of hosts and available services
+        # 3. Create host objects, based on available services.
 
         ip_address_list = self.discovery_engine.get_subnets()
-        service_dict = self.discovery_engine.discover_services(ip_address_list)
+        host_service_dict = self.discovery_engine.discover_services(ip_address_list)
 
-        return service_dict
+        hosts = create_device(host_service_dict)
+
+        return host_service_dict
+    
+  

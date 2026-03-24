@@ -1,5 +1,5 @@
 from ...utils.common import normalize_snmp_string
-from ...discovery.discovery_snmp import SNMPMgmt
+from ..discovery.discovery_snmp import SNMPMgmt
 
 class SNMPPoller:
 

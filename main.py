@@ -1,7 +1,7 @@
 from core.menu import show_menu, show_mapping_menu, read_menu_input
 from core.file_handler import ConfigFile
 from core.mapper import MapEngine
-from discovery.discovery_network import DiscoveryEngine
+from core.discovery.discovery_network import DiscoveryEngine
 
 
 if __name__ == "__main__":

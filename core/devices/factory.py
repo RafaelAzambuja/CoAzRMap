@@ -1,10 +1,12 @@
-# from devices.switches.cisco_switch import *
-# from devices.switches.dell_switch import *
-# from devices.switches.dlink_switch import *
-# from devices.switches.hp_switch import *
-# from devices.switches.hpe_switch import *
-# from devices.switches.huawei_switch import *
-# from devices.switches.tplink_switch import *
+from ..discovery.discovery_snmp import SNMPMgmt
+from base_device import BaseHost
+from devices.cisco.cisco_base import *
+from devices.dell.dell_base import *
+from devices.dlink.dlink_base import *
+from devices.hp.hp_base import *
+from devices.hpe.hpe_base import *
+from devices.huawei.huawei_base import *
+from devices.tplink.tplink_base import *
 
 
 def create_device(self, hosts: dict) -> list:
@@ -14,15 +16,9 @@ def create_device(self, hosts: dict) -> list:
     for ip, services in hosts.items():
 
         snmp_obj = services.get("snmp")
+        ssh_obj = services.get("ssh")
 
-        if not snmp_obj:
-            continue
-
-        device = _identify_type_vendor_model(
-            None,
-            snmp_obj.vendor_oid,
-            snmp_obj
-        )
+        device = _identify_type_vendor_model(ssh_obj, snmp_obj)
 
         if device:
             print(
@@ -35,14 +31,14 @@ def create_device(self, hosts: dict) -> list:
 
     return devices
 
-def _identify_type_vendor_model(ssh, vendor_oid : str, snmp):
+def _identify_type_vendor_model(ssh, snmp : SNMPMgmt):
 
     """
     """
 	
     # Identify by vendor OID
     if snmp:
-        match vendor_oid:
+        match snmp.vendor_oid:
 
             # Cisco
             case "iso.3.6.1.4.1.9.6.1.82.24.1":
@@ -58,6 +54,7 @@ def _identify_type_vendor_model(ssh, vendor_oid : str, snmp):
             case "iso.3.6.1.4.1.11.2.3.7.11.184":
                 return JL381A_1920S(ssh, snmp)
 
+            # D-Link
             case "iso.3.6.1.4.1.171.10.63.6":
                 return DES_3028(ssh, snmp)
             
@@ -76,25 +73,32 @@ def _identify_type_vendor_model(ssh, vendor_oid : str, snmp):
             case "iso.3.6.1.4.1.171.10.75.18.1":
                 return DES_1210_28_C1(ssh, snmp)
 
+            # Dell
             case "iso.3.6.1.4.1.674.10895.3063":
                 return N1524(ssh, snmp)
 
+            # Huawei
             case "iso.3.6.1.4.1.2011.2.23.406":
                 return S5720_28X_LI_AC(ssh, snmp)
 
             case "iso.3.6.1.4.1.2011.2.23.444":
                 return S5720_52X_PWR_LI_AC(ssh, snmp)
 
+            # TPLINK
             case "iso.3.6.1.4.1.11863.1.1.9":
                 return TL_SG5412F(ssh, snmp)
 
+            # HPE
             case "iso.3.6.1.4.1.25506.11.1.169":
                 return HPE1920_48G(ssh, snmp)
             
+            # Generic SNMP Device
             case _:
-                print(f"[INFO] Unknown vendor for host {snmp.agent_interface}: {vendor_oid}")
-                return None
+                return BaseHost(snmp)
+                #print(f"[INFO] Unknown vendor for host {snmp.agent_interface}: {vendor_oid}")
+                #return None
 
     # Identify by SSH prompt logic    
     elif ssh:
+        # SSH polling SHOULD NOT be done here.
         pass
