@@ -24,13 +24,15 @@ if __name__ == "__main__":
                         case '1':
                             map_engine = MapEngine(cfg_file)
                             hosts = map_engine.run_documentation()
-                            print(f"total alive hosts: {len(hosts.items())}")
-                            for host_ip, host_info in hosts.items():
-                                snmp_object = host_info['snmp']
-                                if snmp_object:
-                                    print(f"Host IP: {host_ip}, Vendor OID: {snmp_object.vendor_oid}")
-                                else:
-                                    print(f"Host IP: {host_ip}, no snmp")
+                            print(f"total alive hosts: {len(hosts)}")
+                            for host in hosts:
+                                print(host.vendor)
+                            # for host_ip, host_info in hosts.items():
+                            #     snmp_object = host_info['snmp']
+                            #     if snmp_object:
+                            #         print(f"Host IP: {host_ip}, Vendor OID: {snmp_object.vendor_oid}")
+                            #     else:
+                            #         print(f"Host IP: {host_ip}, no snmp")
                         case '0':
                             print("Returning...")
                             break

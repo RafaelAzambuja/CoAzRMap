@@ -2,13 +2,20 @@ from ..pollers.snmp_poller import SNMPPoller
 
 class BaseHost:
     
-    def __init__(self, snmp = None, ssh = None):
+    host_category = "Unknown"
+    vendor = None
+    model = None
+    
+    def __init__(self, ssh = None, snmp = None):
         
-        self.host_category : str = "Unknown"
-        self.vendor : str = snmp.vendor_oid or None
-        self.model : str = snmp.vendor_oid
         self.snmp = snmp
         self.ssh = ssh
+        self.host_category = self.host_category
+        self.vendor = self.vendor
+        self.model = self.model
+
+        if snmp and not self.vendor:
+            self.vendor = snmp.vendor_oid
 
     def baseInfo_get_sysName(self) -> str:
         """
