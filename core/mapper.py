@@ -16,8 +16,8 @@ class MapEngine:
         # 1. Obtain IP Address list
         # 2. Obtain dict of hosts and available services
         # 3. Create host objects, based on available services.
-        # 4. Build base ID Info (Implmentation needed)
-        # 5. Build base info for each host
+        # 4. Build base info for each host
+        # 5. Build topology info
 
         ip_address_list = self.discovery_engine.get_subnets()
 
@@ -31,10 +31,9 @@ class MapEngine:
         elapsed_identify = time.perf_counter() - start_indentify
         print(f"[INFO] MAP - Vendor identification took {elapsed_identify:.3f} seconds")
 
-        #
-
         data = {}
 
+        # Possible Multithread below
         ip_mac_dict = {}
         for host in hosts:
 
@@ -47,6 +46,8 @@ class MapEngine:
                 ip_mac_dict[host.ip] = new_data["Base"]["System MAC Address"]
 
             data[host.host_category].append(new_data)
+
+        # Possible Multithread above
 
         # Round 2: Covert remote chassis (port, remote port, remote chassis by subtype) to IP Addresses (by mac previously obtained) and interface names, if possible
         # Build FDB
