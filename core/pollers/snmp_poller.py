@@ -51,6 +51,25 @@ class SNMPPoller:
 
         sysName_oid = ".1.3.6.1.2.1.1.5.0"
         value = self.snmp_obj.snmpget(sysName_oid)
+
+        # Could all of these be replaced with match/case?
+        if value[1] == "STRING":
+            return self._normalize_snmp_string(value[0])
+        if value[1] == "Hex-STRING:":
+                return convert_hex_to_utf8(value[0])
+
+        return value[0]
+
+    def baseInfo_get_sysLocation(self) -> str:
+        """
+        Get system location via SNMP GET (mib-2.system.sysLocation.0)
+
+        :return: sysLocation.0 without surrounding quotes, if object type is STRING
+        """
+
+        sysLocation_oid = ".1.3.6.1.2.1.1.6.0"
+        value = self.snmp_obj.snmpget(sysLocation_oid)
+
         if value[1] == "STRING":
             return self._normalize_snmp_string(value[0])
 

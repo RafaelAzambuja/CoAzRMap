@@ -23,13 +23,23 @@ class MapEngine:
 
         start_all = time.perf_counter()
         print("[INFO] MAP - Mapping started.")
+
+        # ----------
+        # DISCOVERY
+        # ----------
+
+        start_discovery = time.perf_counter()
         host_service_dict = self.discovery_engine.discover_services(ip_address_list)
+        print(f"[INFO] MAP - Discovery took {time.perf_counter() - start_discovery:.3f} seconds")
+
+        # ----------------------
+        # DEVICE CATEGORIZATION
+        # ----------------------
 
         print("[INFO] MAP - Identifying vendors.")
-        start_indentify = time.perf_counter()
+        start_identify = time.perf_counter()
         hosts = create_device(host_service_dict)
-        elapsed_identify = time.perf_counter() - start_indentify
-        print(f"[INFO] MAP - Vendor identification took {elapsed_identify:.3f} seconds")
+        print(f"[INFO] MAP - Vendor identification took {time.perf_counter() - start_identify:.6f} seconds")
 
         data = {}
 
@@ -75,8 +85,7 @@ class MapEngine:
                         "Local Port": result
                     })
 
-        elapsed_all = time.perf_counter() - start_all
-        print(f"[INFO] MAP - Mapping took {elapsed_all:.3f} seconds")
+        print(f"[INFO] MAP - Mapping took {time.perf_counter() - start_all:.3f} seconds")
         print(data)
         return hosts
     

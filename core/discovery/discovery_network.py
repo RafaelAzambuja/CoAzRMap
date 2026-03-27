@@ -34,7 +34,7 @@ class DiscoveryEngine:
                 return self._validate_subnets(subnets_input)
             
             except ValueError as e:
-                print(f"Error: {e}")
+                print(f"[ERROR] Error: {e}")
 
     def _validate_subnets(self, ip_address_list: str) -> list[str]:
         """
@@ -57,7 +57,7 @@ class DiscoveryEngine:
                     ip = ipaddress.ip_address(entry)
                     network = ipaddress.ip_network(f"{ip}/{ip.max_prefixlen}", strict=True)
                 except ValueError:
-                    raise ValueError(f"Invalid IPv4 or IPv6 address/subnet: {entry}")
+                    raise ValueError(f"[ERROR] Invalid IPv4 or IPv6 address/subnet: {entry}")
 
             if network.version == 4:
                 ipv4_networks.append(network)
@@ -110,53 +110,60 @@ class DiscoveryEngine:
     def _probe_snmp(self, ip: str):
         snmp = SNMPMgmt(ip, self.cfg_file)
 
-        print(f"[INFO] SNMP - Probing service")
-        start_snmp = time.perf_counter()
+        start = time.perf_counter()
+        success = snmp.connect()
+        elapsed = time.perf_counter() - start
 
-        if snmp.connect():
-            # print(f"[DEBUG] SNMP OK on {ip}")
-            elapsed_snmp = time.perf_counter() - start_snmp
-            print(f"[INFO] SNMP - Probing took {elapsed_snmp:.3f} seconds")
-            return snmp
-
-        # print(f"[DEBUG] SNMP FAILED on {ip}")
-        return None
+        return {
+            "ip": ip,
+            "service": "snmp",
+            "result": snmp if success else None,
+            "elapsed": elapsed,
+        }
 
     def _service_probe_phase(self, hosts: dict[str, dict]) -> None:
 
-        start = time.perf_counter()
+        start_total = time.perf_counter()
+        print(f"[INFO] SERVICES - Starting service probe")
 
         with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
             futures = {}
 
             for ip in hosts.keys():
-                print(f"[INFO] SERVICES - Probing services (SNMP / SSH / HTTP) for {ip}")
+                #print(f"[DEBUG] SERVICES - Starting probe for {ip}")
+
                 if self.cfg_file.read_cfg_file("service", "snmp"):
-                    futures[
-                        executor.submit(self._probe_snmp, ip)
-                    ] = ("snmp", ip)
+                    futures[executor.submit(self._probe_snmp, ip)] = ip
 
-                # Future extensions:
-                # SSH
-                # futures[
-                #     executor.submit(test_ssh_on_host, ip, self.cfg)
-                # ] = ("ssh", ip)
+                    # Future extensions:
+                    # SSH
+                    # futures[
+                    #     executor.submit(test_ssh_on_host, ip, self.cfg)
+                    # ] = ("ssh", ip)
 
-                # HTTP
-                # futures[
-                #     executor.submit(test_http_on_host, ip, self.cfg)
-                # ] = ("http", ip)
+                    # HTTP
+                    # futures[
+                    #     executor.submit(test_http_on_host, ip, self.cfg)
+                    # ] = ("http", ip)
 
             for future in as_completed(futures):
-                service, ip = futures[future]
+                ip = futures[future]
 
                 try:
-                    result = future.result()
+                    data = future.result()
+
+                    # elapsed = data["elapsed"]
+                    result = data["result"]
+
+                    # print(f"[INFO] SNMP - {ip} took {elapsed:.3f} seconds")
 
                     if result:
-                        hosts[ip][service] = result
-                except Exception as e:
-                    print(f"[ERROR] {service} - Probe failed on {ip}: {e}")
+                        hosts[ip]["snmp"] = result
 
-        elapsed = time.perf_counter() - start
-        print(f"[INFO] SERVICES - Probe took {elapsed:.3f} seconds")
+                    # print(f"[INFO] SERVICES - Finished probe for {ip}")
+
+                except Exception as e:
+                    print(f"[ERROR] Error: {e}")
+
+        total_elapsed = time.perf_counter() - start_total
+        print(f"[INFO] SERVICES - Probe took {total_elapsed:.3f} seconds")

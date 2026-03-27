@@ -55,6 +55,7 @@ class BaseHost:
             "System Management IP Address": self.ip,
             "System MAC Address": self.baseInfo_get_sys_mac(), # System MAC can be: LLDP Chassis, MAC of L3 Interface (i.e. vlan interface), MAC of the lowest index port in if-MIB, or bridge address (dot1dBaseBridgeAddress)
             "System Name": self.baseInfo_get_sysName(),
+            "System Location": self.baseInfo_get_sysLocation(),
             "System Model": self.model,
             "System Vendor": self.vendor
         }
@@ -71,7 +72,6 @@ class BaseHost:
 
         # except:
             # poller_ssh = ...
-            # sys_name = poller_ssh.baseInfo_get_sysName(self.ssh)
 
         finally:
             return sys_mac
@@ -86,10 +86,21 @@ class BaseHost:
 
         # except:
             # poller_ssh = ...
-            # sys_name = poller_ssh.baseInfo_get_sysName(self.ssh)
 
         finally:
             return sys_name
+
+    def baseInfo_get_sysLocation(self):
+
+        # Unknow vendor = No fallback to SSH, HTTP, etc.
+        try:
+            sys_location = self.poller_snmp.baseInfo_get_sysLocation()
+
+        # except:
+            # poller_ssh = ...
+
+        finally:
+            return sys_location
 
     # ---------------
     # VLAN
@@ -106,7 +117,6 @@ class BaseHost:
 
         # except:
             # poller_ssh = ...
-            # sys_name = poller_ssh.baseInfo_get_sysName(self.ssh)
 
         finally:
             return vlan_list
