@@ -1,3 +1,4 @@
+import time
 from core.file_handler import ConfigFile
 from core.devices.factory import create_device
 from .discovery.discovery_network import DiscoveryEngine
@@ -19,9 +20,16 @@ class MapEngine:
         # 5. Build base info for each host
 
         ip_address_list = self.discovery_engine.get_subnets()
+
+        start_all = time.perf_counter()
+        print("[INFO] MAP - Mapping started.")
         host_service_dict = self.discovery_engine.discover_services(ip_address_list)
 
+        print("[INFO] MAP - Identifying vendors.")
+        start_indentify = time.perf_counter()
         hosts = create_device(host_service_dict)
+        elapsed_identify = time.perf_counter() - start_indentify
+        print(f"[INFO] MAP - Vendor identification took {elapsed_identify:.3f} seconds")
 
         #
 
@@ -40,29 +48,23 @@ class MapEngine:
 
             data[host.host_category].append(new_data)
 
-        print(ip_mac_dict)
-
         # Round 2: Covert remote chassis (port, remote port, remote chassis by subtype) to IP Addresses (by mac previously obtained) and interface names, if possible
         # Build FDB
 
         for host in hosts:
-            # Find this host's data entry in 'data'
             host_data_list = data.get(host.host_category, [])
             
-            # Find the dict corresponding to this host by IP
             host_data = next((d for d in host_data_list if d.get("Base", {}).get("System Management IP Address") == host.ip), None)
             
             if host_data is None:
-                continue  # skip if not found
+                continue
 
-            # Ensure 'FDB' key exists
             if "FDB" not in host_data:
                 host_data["FDB"] = []
 
-            # Check remote MACs
             for ip, mac in ip_mac_dict.items():
                 if ip == host.ip:
-                    continue  # skip self
+                    continue
 
                 result = host.fdb_lookup(mac)
                 if result:
@@ -72,6 +74,8 @@ class MapEngine:
                         "Local Port": result
                     })
 
+        elapsed_all = time.perf_counter() - start_all
+        print(f"[INFO] MAP - Mapping took {elapsed_all:.3f} seconds")
         print(data)
         return hosts
     

@@ -103,31 +103,34 @@ class DiscoveryEngine:
 
         elapsed = time.perf_counter() - start
         #print(f"[DEBUG] Alive hosts in {subnet}: {alive_hosts}")
-        print(f"[INFO] ICMP polling took {elapsed:.3f} seconds")
+        print(f"[INFO] ICMP - Polling took {elapsed:.3f} seconds")
 
         return hosts
 
     def _probe_snmp(self, ip: str):
-        print(f"[DEBUG] Trying SNMP on {ip}")
         snmp = SNMPMgmt(ip, self.cfg_file)
 
+        print(f"[INFO] SNMP - Probing service")
+        start_snmp = time.perf_counter()
+
         if snmp.connect():
-            print(f"[DEBUG] SNMP OK on {ip}")
+            # print(f"[DEBUG] SNMP OK on {ip}")
+            elapsed_snmp = time.perf_counter() - start_snmp
+            print(f"[INFO] SNMP - Probing took {elapsed_snmp:.3f} seconds")
             return snmp
 
-        print(f"[DEBUG] SNMP FAILED on {ip}")
+        # print(f"[DEBUG] SNMP FAILED on {ip}")
         return None
 
     def _service_probe_phase(self, hosts: dict[str, dict]) -> None:
 
-        print("[INFO] Probing services (SNMP / SSH / HTTP)")
         start = time.perf_counter()
 
         with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
             futures = {}
 
             for ip in hosts.keys():
-
+                print(f"[INFO] SERVICES - Probing services (SNMP / SSH / HTTP) for {ip}")
                 if self.cfg_file.read_cfg_file("service", "snmp"):
                     futures[
                         executor.submit(self._probe_snmp, ip)
@@ -153,7 +156,7 @@ class DiscoveryEngine:
                     if result:
                         hosts[ip][service] = result
                 except Exception as e:
-                    print(f"[ERROR] {service} probe failed on {ip}: {e}")
+                    print(f"[ERROR] {service} - Probe failed on {ip}: {e}")
 
         elapsed = time.perf_counter() - start
-        print(f"[INFO] Service probing took {elapsed:.3f} seconds")
+        print(f"[INFO] SERVICES - Probe took {elapsed:.3f} seconds")

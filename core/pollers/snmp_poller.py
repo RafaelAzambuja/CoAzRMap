@@ -89,12 +89,85 @@ class SNMPPoller:
     # TOPOLOGY
     # ---------------
 
-    def lldp_get_local_chassis(self) -> str:
+    def lldp_normalize_chassis_id_subtype(self, chassis : tuple, chassis_id_subtype : str) -> tuple:
+        match chassis_id_subtype:
+
+            case '1': # entPhysicalAlias (stack member?)
+
+                if chassis[1] == "STRING":
+                    chassis = self._normalize_snmp_string(chassis[0])
+                if chassis[1] == "Hex-STRING":
+                    chassis = chassis[0].replace(" ", ":").strip('"')
+                
+                return (chassis, "chassisComponent")
+            
+            case '2': # ifAlias
+
+                if chassis[1] == "STRING":
+                    chassis = self._normalize_snmp_string(chassis[0])
+                if chassis[1] == "Hex-STRING":
+                    chassis = chassis[0].replace(" ", ":").strip('"')
+                return (chassis, "interfaceAlias")
+            
+            case '3': # entPhysicalAlias (port)
+
+                if chassis[1] == "STRING":
+                    chassis = self._normalize_snmp_string(chassis[0])
+                if chassis[1] == "Hex-STRING":
+                    chassis = local_chassis[0].replace(" ", ":").strip('"')
+                return (chassis, "portComponent")
+            
+            case '4': # unicast source address
+
+                if chassis[1] == "STRING":
+                    chassis = self._normalize_snmp_string(chassis[0])
+                if chassis[1] == "Hex-STRING":
+                    chassis = chassis[0].replace(" ", ":").strip('"')
+                return (chassis, "macAddress")
+            
+            case '5': # network address
+
+                if chassis[1] == "STRING":
+                    chassis = self._normalize_snmp_string(chassis[0])
+                # if local_chassis[1] == "Hex-STRING": # Haven't found this case yet.
+                #
+                return (chassis, "networkAddress")
+            
+            case '6': # ifName
+
+                if chassis[1] == "STRING":
+                    chassis = self._normalize_snmp_string(chassis[0])
+                # if local_chassis[1] == "Hex-STRING": # Haven't found this case yet.
+                #
+                return (chassis, "interfaceName")
+            
+            case '7': # Locally Assigned
+
+                if local_chassis[1] == "STRING":
+                    local_chassis = self._normalize_snmp_string(local_chassis[0])
+                # if local_chassis[1] == "Hex-STRING": # Haven't found this case yet.
+                # Probable conversion to utf8
+                return (chassis, "local")
+            
+            case _:
+                return (chassis, "Unknown Subtype")
+
+    def lldp_get_local_chassis(self) -> tuple | None:
         lldpLocChassisId_oid = ".1.0.8802.1.1.2.1.3.2.0"
 
         local_chassis = self.snmp_obj.snmpget(lldpLocChassisId_oid)
 
-        return self._normalize_snmp_string(local_chassis[0])
+        return (self._normalize_snmp_string(local_chassis[0]), local_chassis[1])
+
+    def lldp_get_local_chassis_subtype(self) -> str | None:
+        lldpLocChassisIdSubtype_oid = ".1.0.8802.1.1.2.1.3.1.0"
+
+        local_chassis_id_subtype = self.snmp_obj.snmpget(lldpLocChassisIdSubtype_oid)
+        
+        if local_chassis_id_subtype[0]:
+            return local_chassis_id_subtype[0]
+        
+        return None
 
     def lldp_get_remote_entry_list(self) -> dict:
         lldpRemChassisId_oid = ".1.0.8802.1.1.2.1.4.1.1.5"

@@ -15,7 +15,7 @@ def create_device(hosts: dict) -> list:
 
     for ip, services in hosts.items():
 
-        print(f"[DEBUG] Trying to create host {ip}")
+        # print(f"[DEBUG] Trying to create host {ip}")
 
         snmp_obj = services.get("snmp")
         ssh_obj = services.get("ssh")
@@ -23,12 +23,12 @@ def create_device(hosts: dict) -> list:
         device = _identify_type_vendor_model(ip, ssh_obj, snmp_obj)
 
         if device:
-            print(
-                f"[DEBUG] Created host: "
-                f"Host: {ip}, "
-                f"Vendor: {device.vendor}, "
-                f"Model: {device.model}"
-            )
+            # print(
+            #     f"[DEBUG] Created host: "
+            #     f"Host: {ip}, "
+            #     f"Vendor: {device.vendor}, "
+            #     f"Model: {device.model}"
+            # )
             devices.append(device)
 
     return devices
@@ -96,7 +96,7 @@ def _identify_type_vendor_model(ip, ssh, snmp : SNMPMgmt):
             
             # Generic SNMP Device
             case _:
-                return BaseHost(snmp)
+                return BaseHost(ip, None ,snmp)
                 #print(f"[INFO] Unknown vendor for host {snmp.agent_interface}: {vendor_oid}")
                 #return None
 
