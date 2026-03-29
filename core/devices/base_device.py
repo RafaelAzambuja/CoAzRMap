@@ -196,12 +196,13 @@ class BaseHost:
         finally:
             return lldp_remote
 
-    def fdb_lookup(self, mac) -> str:
-        fdb_local_port = ""
+    def fdb_lookup(self, mac) -> tuple:
+        fdb_local_port = ()
         try:
             fdb_local_port = self.poller_snmp.fdb_lookup(mac)
 
         # except:
 
         finally:
+            # vlan, local_port
             return fdb_local_port

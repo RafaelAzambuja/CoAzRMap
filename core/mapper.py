@@ -82,7 +82,8 @@ class MapEngine:
                     host_data["FDB"].append({
                         "IP": ip,
                         "MAC": mac,
-                        "Local Port": result
+                        "VLAN": result[0],
+                        "Local Port": result[1]
                     })
 
         print(f"[INFO] MAP - Mapping took {time.perf_counter() - start_all:.3f} seconds")
