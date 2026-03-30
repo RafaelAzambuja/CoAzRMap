@@ -235,7 +235,7 @@ class SNMPPoller:
 
                 if chassis[1] == "STRING":
                     chassis = self._normalize_snmp_string(chassis[0])
-                if chassis[1] == "Hex-STRING":
+                elif chassis[1] == "Hex-STRING":
                     chassis = chassis[0].replace(" ", ":").strip('"')
                 
                 return (chassis, "chassisComponent")
@@ -244,15 +244,17 @@ class SNMPPoller:
 
                 if chassis[1] == "STRING":
                     chassis = self._normalize_snmp_string(chassis[0])
-                if chassis[1] == "Hex-STRING":
-                    chassis = chassis[0].replace(" ", ":").strip('"')
+                elif chassis[1] == "Hex-STRING":
+                    chassis = convert_hex_to_utf8(chassis[0])
+                #     chassis = chassis[0].replace(" ", ":").strip('"')
+                
                 return (chassis, "interfaceAlias")
             
             case '3': # entPhysicalAlias (port)
 
                 if chassis[1] == "STRING":
                     chassis = self._normalize_snmp_string(chassis[0])
-                if chassis[1] == "Hex-STRING":
+                elif chassis[1] == "Hex-STRING":
                     chassis = local_chassis[0].replace(" ", ":").strip('"')
                 return (chassis, "portComponent")
             
@@ -260,7 +262,7 @@ class SNMPPoller:
 
                 if chassis[1] == "STRING":
                     chassis = self._normalize_snmp_string(chassis[0])
-                if chassis[1] == "Hex-STRING":
+                elif chassis[1] == "Hex-STRING":
                     chassis = chassis[0].replace(" ", ":").strip('"')
                 return (chassis, "macAddress")
             
@@ -268,7 +270,7 @@ class SNMPPoller:
 
                 if chassis[1] == "STRING":
                     chassis = self._normalize_snmp_string(chassis[0])
-                # if local_chassis[1] == "Hex-STRING": # Haven't found this case yet.
+                # elif local_chassis[1] == "Hex-STRING": # Haven't found this case yet.
                 #
                 return (chassis, "networkAddress")
             
@@ -276,7 +278,7 @@ class SNMPPoller:
 
                 if chassis[1] == "STRING":
                     chassis = self._normalize_snmp_string(chassis[0])
-                # if local_chassis[1] == "Hex-STRING": # Haven't found this case yet.
+                # elif local_chassis[1] == "Hex-STRING": # Haven't found this case yet.
                 #
                 return (chassis, "interfaceName")
             
@@ -284,12 +286,76 @@ class SNMPPoller:
 
                 if local_chassis[1] == "STRING":
                     local_chassis = self._normalize_snmp_string(local_chassis[0])
-                # if local_chassis[1] == "Hex-STRING": # Haven't found this case yet.
+                # elif local_chassis[1] == "Hex-STRING": # Haven't found this case yet.
                 # Probable conversion to utf8
                 return (chassis, "local")
             
             case _:
-                return (chassis, "Unknown Subtype")
+                return (chassis[0], "Unknown Subtype")
+
+    def lldp_normalize_port_subtype(self, port, port_subtype):
+        
+        match port_subtype:
+            case '1':
+
+                if port[1] == "STRING":
+                    port = self._normalize_snmp_string(port[0])
+                elif port[1] == "Hex-STRING":
+                    port = convert_hex_to_utf8(port[0])
+                #    port = port[0].replace(" ", ":").strip('"')
+
+                return (port, "interfaceAlias")
+            
+            case '2':
+
+                if port[1] == "STRING":
+                    port = self._normalize_snmp_string(port[0])
+                elif port[1] == "Hex-STRING":
+                    port = port[0].replace(" ", ":").strip('"')
+
+                return (port, "portComponent")
+            
+            case '3':
+
+                if port[1] == "STRING":
+                    port = self._normalize_snmp_string(port[0])
+                elif port[1] == "Hex-STRING":
+                    port = port[0].replace(" ", ":").strip('"')
+                
+                return (port, "macAddress")
+            
+            case '4':
+                
+                if port[1] == "STRING":
+                    port = self._normalize_snmp_string(port[0])
+
+                return (port, "networkAddress")
+            
+            case '5':
+
+                if port[1] == "STRING":
+                    port = self._normalize_snmp_string(port[0])
+                elif port[1] == "Hex-STRING":
+                    port = convert_hex_to_utf8(port[0])
+                    # port = port[0].replace(" ", ":").strip('"')
+                return (port, "interfaceName")
+            
+            case '6':
+                
+                if port[1] == "STRING":
+                    port = self._normalize_snmp_string(port[0])
+                elif port[1] == "Hex-STRING":
+                    port = convert_hex_to_utf8(port[0])
+
+                return (port, "agentCircuitId")
+            
+            case '7':
+                if port[1] == "STRING":
+                    port = self._normalize_snmp_string(port[0])
+                return (port, "local")
+            
+            case _:
+                return (port[0], "Unknown port subtype")
 
     def lldp_get_local_chassis(self) -> tuple | None:
         lldpLocChassisId_oid = ".1.0.8802.1.1.2.1.3.2.0"
@@ -310,7 +376,9 @@ class SNMPPoller:
 
     def lldp_get_remote_entry_list(self) -> dict:
         lldpRemChassisId_oid = ".1.0.8802.1.1.2.1.4.1.1.5"
-        # 1.0.8802.1.1.2.1.4.1.1.5.timeMark.locPort.lldpRemIndex
+        lldpRemChassisIdSubtype_oid = ".1.0.8802.1.1.2.1.4.1.1.4."
+
+        
         lldp_rem_entry_list = self.snmp_obj.snmpwalk(lldpRemChassisId_oid)
 
         regex = compile(
@@ -331,20 +399,40 @@ class SNMPPoller:
 
             chave = (local_port, rem_index)
 
-            # Mantém apenas o maior timemark para cada chave
             if chave not in validos or time_mark > validos[chave]:
                 validos[chave] = time_mark
 
+        # 1.0.8802.1.1.2.1.4.1.1.5.timeMark.locPort.lldpRemIndex
         # "timeMark.localPort.remIndex"
 
         data = {}
         for (local_port, rem_index), time_mark in validos.items():
+
+            remote_chassis = self.snmp_obj.snmpget(".1.0.8802.1.1.2.1.4.1.1.5."+f"{time_mark}.{local_port}.{rem_index}")
+            remote_chassis_subtype = self.snmp_obj.snmpget(lldpRemChassisIdSubtype_oid+f"{time_mark}.{local_port}.{rem_index}")
+            remote_port = self.snmp_obj.snmpget(".1.0.8802.1.1.2.1.4.1.1.7."+f"{time_mark}.{local_port}.{rem_index}")
+            remote_port_subtype = self.lldp_get_remote_port_id_subtype(f"{time_mark}.{local_port}.{rem_index}")
+
+            remote_chassis_info = self.lldp_normalize_chassis_id_subtype(remote_chassis, remote_chassis_subtype)
+            remote_port_info = self.lldp_normalize_port_subtype(remote_port, remote_port_subtype)
+
             data[local_port] = {
-                "Remote Host": self._normalize_snmp_string(self.snmp_obj.snmpget(".1.0.8802.1.1.2.1.4.1.1.5."+f"{time_mark}.{local_port}.{rem_index}")[0]),
-                "Remote Port": self._normalize_snmp_string(self.snmp_obj.snmpget(".1.0.8802.1.1.2.1.4.1.1.7."+f"{time_mark}.{local_port}.{rem_index}")[0])
+                "Remote Host": remote_chassis_info[0],
+                "Remote Chassis Subtype": remote_chassis_info[1],
+                "Remote Port": remote_port_info[0],
+                "Remote Port Subtype": remote_port_info[1]
             }
 
         return data
+
+
+    def lldp_get_remote_port_id_subtype(self, instance):
+        lldpRemPortIdSubtype_oid = ".1.0.8802.1.1.2.1.4.1.1.6."
+        value = self.snmp_obj.snmpget(lldpRemPortIdSubtype_oid+instance)
+        if not value:
+            return ""
+
+        return value[0]
 
     def fdb_lookup(self, mac) -> tuple:
         dot1qTpFdbPort_oid = ".1.3.6.1.2.1.17.7.1.2.2.1.2."
