@@ -1,4 +1,5 @@
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from core.file_handler import ConfigFile, JsonFile
 from core.devices.factory import create_device
 from .discovery.discovery_network import DiscoveryEngine
@@ -7,9 +8,34 @@ from .discovery.discovery_network import DiscoveryEngine
 class MapEngine:
     
     def __init__(self, cfg_file : ConfigFile):
-        self.cfg_file = cfg_file
-        self.discovery_engine = DiscoveryEngine(self.cfg_file)
-    
+        self.max_threads = max(1, min(128, int(cfg_file.read_cfg_file("options", "max_threads", fallback="10"))))
+        self.discovery_engine = DiscoveryEngine(cfg_file)
+
+    def process_host(self, host):
+        new_data = host.device_doc_decision()
+        mac = None
+
+        if new_data:
+            mac = new_data["Base"]["System MAC Address"]
+
+        return host.host_category, host.ip, new_data, mac
+
+    def process_fdb(self, host, ip, mac):
+        if ip == host.ip:
+            return None
+
+        result = host.fdb_lookup(mac)
+        if not result:
+            return None
+
+        return {
+            "host_ip": host.ip,
+            "IP": ip,
+            "MAC": mac,
+            "VLAN": result[0],
+            "Local Port": result[1]
+        }
+
     def run_documentation(self):
         
         # Workflow:
@@ -42,54 +68,60 @@ class MapEngine:
         print(f"[INFO] MAP - Vendor identification took {time.perf_counter() - start_identify:.6f} seconds")
 
 
-        #
-        #
-        #
+        # ------------------------------------------
+        # Build Doc and Collect System MAC Address
+        # ------------------------------------------
 
         data = {}
-
-        # Possible Multithread below
         ip_mac_dict = {}
-        for host in hosts:
 
-            new_data = host.device_doc_decision()
+        with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
+            futures = [executor.submit(self.process_host, host) for host in hosts]
 
-            if not host.host_category in data:
-                data.update({host.host_category: []})
+            for future in as_completed(futures):
+                category, ip, new_data, mac = future.result()
 
-            if new_data:
-                ip_mac_dict[host.ip] = new_data["Base"]["System MAC Address"]
+                if category not in data:
+                    data[category] = []
 
-            data[host.host_category].append(new_data)
+                if mac:
+                    ip_mac_dict[ip] = mac
 
-        # Possible Multithread above
+                data[category].append(new_data)
 
-        # Round 2: Covert remote chassis (port, remote port, remote chassis by subtype) to IP Addresses (by mac previously obtained) and interface names, if possible
+        # ----------
         # Build FDB
+        # ----------
+
+        host_data = {}
 
         for host in hosts:
             host_data_list = data.get(host.host_category, [])
-            
-            host_data = next((d for d in host_data_list if d.get("Base", {}).get("System Management IP Address") == host.ip), None)
-            
-            if host_data is None:
-                continue
+            for d in host_data_list:
+                ip = d.get("Base", {}).get("System Management IP Address")
+                if ip:
+                    host_data[ip] = d
+                    if "FDB" not in d:
+                        d["FDB"] = []
 
-            if "FDB" not in host_data:
-                host_data["FDB"] = []
+        with ThreadPoolExecutor(max_workers=self.max_threads) as executor:
+            futures = []
 
-            for ip, mac in ip_mac_dict.items():
-                if ip == host.ip:
+            for host in hosts:
+                if host.ip not in host_data:
                     continue
 
-                result = host.fdb_lookup(mac)
-                if result:
-                    host_data["FDB"].append({
-                        "IP": ip,
-                        "MAC": mac,
-                        "VLAN": result[0],
-                        "Local Port": result[1]
-                    })
+                for ip, mac in ip_mac_dict.items():
+                    futures.append(executor.submit(self.process_fdb, host, ip, mac))
+
+            for future in as_completed(futures):
+                result = future.result()
+                if not result:
+                    continue
+
+                host_ip = result.pop("host_ip")
+                host_data[host_ip]["FDB"].append(result)
+
 
         print(f"[INFO] MAP - Mapping took {time.perf_counter() - start_all:.3f} seconds")
         json_out = JsonFile()
