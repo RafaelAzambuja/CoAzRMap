@@ -29,6 +29,7 @@ class BaseHost:
         match self.host_category:
             case "Switch":
                 data["Base"] = self.general_baseInfo_builder()
+                data["Interfaces"] = self.interface_get_list()
                 data["LLDP"] = self.lldp_info_builder()
                 # Fix logic below
                 lldp_neighbor_list = self.lldp_get_remote_list()
@@ -43,6 +44,7 @@ class BaseHost:
 
             case "Access Point":
                 data["Base"] = self.general_baseInfo_builder()
+                data["Interfaces"] = self.interface_get_list()
                 data["LLDP"] = self.lldp_info_builder()
                 # Fix logic below
                 lldp_neighbor_list = self.lldp_get_remote_list()
@@ -136,6 +138,22 @@ class BaseHost:
         finally:
             return vlan_list
 
+    # ---------------
+    # INTERFACES
+    # ---------------
+
+    def interface_get_list(self) -> list:
+        """
+        """
+
+        try:
+            iface_list = self.poller_snmp.interface_get_list()
+
+        # except:
+            # poller_ssh = ...
+
+        finally:
+            return iface_list
 
     # ---------------
     # TOPOLOGY

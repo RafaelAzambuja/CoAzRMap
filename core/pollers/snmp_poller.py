@@ -105,6 +105,126 @@ class SNMPPoller:
         return vlan_entry_list
 
     # ---------------
+    # INTERFACES
+    # ---------------
+
+    def interface_get_list(self) -> list:
+
+        ifType_oid = ".1.3.6.1.2.1.2.2.1.3"
+        if_list = self.snmp_obj.snmpwalk(ifType_oid)
+
+        iface_list_dict = []
+
+        for iface in if_list:
+            object_instance, _, _, if_type, *_ = iface.split()
+            if_index = object_instance.rsplit('.', 1)[-1]
+
+            data = {
+                "Interface ifIndex": if_index,
+                "Interface Desciption": self.interface_get_name(if_index),
+                "Interface Alias": self.interface_get_alias(if_index),
+                "Interface Type": self._identify_interface_type(if_type)[0],
+                "Interface Physical Address": self.interface_get_phyAddress(if_index)
+            }
+
+            iface_list_dict.append(data)
+        
+        return iface_list_dict
+
+    def _identify_interface_type(self, interface_type) -> tuple:
+
+        # Not sure about 'scope'
+        match interface_type:
+            case '1': # Undefined. Usually CPU.
+                return ("Other", "Other")
+            
+            case '6': # ethernetCsmacd (RFC 3635).
+                return ("ethernetCsmacd", "Port")
+            
+            case '24': # softwareLoopback
+                return ("softwareLoopback", "Loopback")
+            
+            case '53': # Proprietary Virtual/Internal
+                return ("propVirtual", "Proprietary")
+            
+            case '117': # gigabitEthernet. Obsolet. should return ethernetCsmacd
+                return ("gigabitEthernet", "Port")
+            
+            case '131': # tunnel
+                return ("tunnel", "Tunnel")
+            
+            case '135': # l2vlan 802.1Q
+                return ("l2vlan", "VLAN")
+            
+            case '136': # l3ipvlan. vlan "with IP"
+                return ("l3ipvlan", "VLAN")
+            
+            case '161': # IEEE 802.3ad Link Aggregate
+                return ("LAG 802.3ad", "Link Aggregation")
+            
+            case _:
+                return (interface_type, "Unknown")
+
+    def interface_get_name(self, instance) -> str:
+        """
+        Get interface textual name via SNMP GET (mib-2.ifMIB.ifName.instance)
+
+        :return: If value is STRING: ifName.instance without surrounding quotes
+        :return: If value is Hex-STRING: ifName.instance converted to UTF-8
+        """
+
+        ifName_oid = ".1.3.6.1.2.1.31.1.1.1.1."
+        value = self.snmp_obj.snmpget(ifName_oid+instance)
+
+        if value[1] == "STRING":
+            return self._normalize_snmp_string(value[0])
+
+        if value[1] == "Hex-STRING":
+            return convert_hex_to_utf8(value[0])
+
+        return value[0]
+
+    def interface_get_type(self, instance) -> dict:
+        """
+        Get interface enumerated value for IANAifType-MIB DEFINITIONS via SNMP GET (mib-2.ifMIB.ifType.instance)
+
+        :return:
+        """
+
+        ifType_oid = ".1.3.6.1.2.1.2.2.1.3."
+        value = self.snmp_obj.snmpget(ifType_oid+instance)
+
+        return value[0] # Hopefully type is always INTEGER
+
+    def interface_get_phyAddress(self, instance) -> str:
+        """
+
+        """
+
+        ifPhyAddress_oid = ".1.3.6.1.2.1.2.2.1.6."
+        value = self.snmp_obj.snmpget(ifPhyAddress_oid+instance)
+
+        if any(value):
+            return value[0].replace(" ", ":").strip(':') # Hopefully type is always Hex-STRING
+        return ""
+
+    def interface_get_alias(self, instance) -> str:
+        """
+
+        """
+
+        ifAlias_oid = ".1.3.6.1.2.1.31.1.1.1.18."
+        value = self.snmp_obj.snmpget(ifAlias_oid+instance)
+
+        if value[1] == "STRING":
+            return self._normalize_snmp_string(value[0])
+
+        if value[1] == "Hex-STRING":
+            return convert_hex_to_utf8(value[0])
+
+        return value[0]
+
+    # ---------------
     # TOPOLOGY
     # ---------------
 

@@ -41,6 +41,11 @@ class MapEngine:
         hosts = create_device(host_service_dict)
         print(f"[INFO] MAP - Vendor identification took {time.perf_counter() - start_identify:.6f} seconds")
 
+
+        #
+        #
+        #
+
         data = {}
 
         # Possible Multithread below
