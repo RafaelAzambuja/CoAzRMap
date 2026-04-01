@@ -6,9 +6,8 @@ IT Infrastructure mapping and documentation tool based on implemented tools used
 [Implementação de um Mecanismo Para Detecção de Mensagens Router Advertisement Maliciosas e Servidores DHCPv6 Falsos em Redes de Equipamentos Legados](https://sol.sbc.org.br/index.php/errc/article/view/26057)
 
 ### This is not...
-... ❌ an orchestration tool;
+... ❌ an orchestration tool;<br>
 ... ❌ a vulnerability scan tool;
-... ❌ a magic tool that will point out flaws in your network design.
 
 ## Requirements
 * Python3
@@ -20,7 +19,7 @@ IT Infrastructure mapping and documentation tool based on implemented tools used
 python3 -m venv some_dir
 cd some_dir
 pip3 install paramiko
-git clone https://github.com/RafaelAzambuja/NetDoc.git src
+git clone https://github.com/RafaelAzambuja/CoAzRMap.git src
 source bin/activate
 cd src
 mv config.ini.example config.ini

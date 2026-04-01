@@ -1,5 +1,5 @@
 [output]
-dir = ./output
+dir = ../output
 
 [icmp]
 timeout = 2
