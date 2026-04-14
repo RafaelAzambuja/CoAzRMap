@@ -1,6 +1,7 @@
 from re import compile
 from ..discovery.discovery_snmp import SNMPMgmt
-from ..common import convert_hex_to_oid, convert_hex_to_utf8, convert_port_list
+from ..common import normalize_result, convert_hex_to_oid, convert_hex_to_utf8, convert_port_list
+from ..constants import *
 
 
 class SNMPPoller:
@@ -12,98 +13,50 @@ class SNMPPoller:
         
         self.snmp_obj = snmp_obj
 
-    def _normalize_snmp_string(self, value : str) -> str:
-            """
-
-            """
-            # if None
-            if not value:
-                return ""
-
-            # else, remove trailing space, tab space, new line, quotes
-
-            return value.strip('"').rstrip()
-
     # ---------------
     # Base Info
     # ---------------
 
-    def baseInfo_get_sys_mac(self) -> str:
-        '''
-
-        '''
-
-        dot1dBaseBridgeAddress_oid = ".1.3.6.1.2.1.17.1.1.0"
-
-        value, value_type = self.snmp_obj.snmpget(dot1dBaseBridgeAddress_oid)
-        value = self._normalize_snmp_string(value)
-
-        match value_type:
-
-            case 'STRING':
-                value = ' '.join(f"{ord(c):02x}" for c in value)
-                value = value.replace(" ", ":")
-                return value
-
-            case 'Hex-STRING':
-                value = value.replace(" ", ":")
-                return value
-
-            case _:
-                return value
-
-    def baseInfo_get_sysName(self) -> str:
+    def baseInfo_get_sysName(self, oid : str = SYS_NAME_OID) -> str:
         '''Get system name via SNMP GET (mib-2.system.sysName.0)
 
-        :return: sysName.0 without surrounding quotes, if object type is STRING
         '''
 
-        sysName_oid = ".1.3.6.1.2.1.1.5.0"
+        value, value_type = self.snmp_obj.snmpget(oid)
+        value = normalize_result(value, value_type, "utf8")
 
-        value, value_type = self.snmp_obj.snmpget(sysName_oid)
-        value = self._normalize_snmp_string(value)
+        return value
 
-        match value_type:
-
-            case 'Hex-STRING':
-                value = convert_hex_to_utf8(value)
-                return value
-
-            case _:
-                return value
-
-    def baseInfo_get_sysLocation(self) -> str:
+    def baseInfo_get_sysLocation(self, oid : str = SYS_LOCATION_OID) -> str:
         '''Get system location via SNMP GET (mib-2.system.sysLocation.0)
 
-        :return: sysLocation.0 without surrounding quotes, if object type is STRING
         '''
 
-        sysLocation_oid = ".1.3.6.1.2.1.1.6.0"
+        value, value_type = self.snmp_obj.snmpget(oid)
+        value = normalize_result(value, value_type, "utf8")
 
-        value, value_type = self.snmp_obj.snmpget(sysLocation_oid)
-        value = self._normalize_snmp_string(value)
+        return value
 
-        match value_type:
+    def baseInfo_get_sys_mac(self, oid : str = BRIDGE_ADDRESS_OID) -> str:
+        '''
 
-            case 'Hex-STRING':
-                value = convert_hex_to_utf8(value)
-                return value
-            
-            case _:
-                return value
+        '''
+
+        value, value_type = self.snmp_obj.snmpget(oid)
+        value = normalize_result(value, value_type, "mac")
+
+        return value
 
     # ---------------
     # VLAN
     # ---------------
 
-    def vlan_get_static_list(self) -> list:
+    def vlan_get_static_list(self, oid : str = VLAN_STATIC_ENTRY_OID) -> list:
         '''
         
         '''
 
-        vlanStaticEntry_oid = ".1.3.6.1.2.1.17.7.1.4.3.1.1"
-
-        result = self.snmp_obj.snmpwalk(vlanStaticEntry_oid)
+        result = self.snmp_obj.snmpwalk(oid)
         vlan_entry_list = []
 
         for entry in result:
@@ -114,11 +67,7 @@ class SNMPPoller:
             vlan_vid = oid.split('.')[13]
             vlan_name = vlan_name = " ".join(parts[3:])
 
-            vlan_name = self._normalize_snmp_string(vlan_name)
-
-            match value_type:
-                case 'Hex-String':
-                    vlan_name = convert_hex_to_utf8(vlan_name)
+            vlan_name = normalize_result(vlan_name, value_type, "utf8")
 
             vlan_entry_list.append({
                 "VID": vlan_vid,
@@ -127,25 +76,22 @@ class SNMPPoller:
         
         return vlan_entry_list
 
-    def vlan_get_interface_pvid(self, instance) -> str:
+    def vlan_get_interface_pvid(self, port_index : str, oid : str = VLAN_PORT_VID) -> str:
         '''
         
         '''
-        
-        dot1qPvid_oid = "1.3.6.1.2.1.17.7.1.4.5.1.1."
 
-        result = self.snmp_obj.snmpget(dot1qPvid_oid+instance)
+        value = self.snmp_obj.snmpget(oid + '.' + port_index)
+        value = self._normalize_snmp_string(value[0])
 
-        return self._normalize_snmp_string(result[0])
+        return value
     
-    def vlan_get_untagged(self, vid) -> list:
+    def vlan_get_untagged(self, vid : str, oid : str = VLAN_UNTAGGED_PORTS) -> list:
         '''
         
         '''
-        
-        dot1qVlanStaticUntaggedPorts_oid = ".1.3.6.1.2.1.17.7.1.4.3.1.4."
 
-        result = self.snmp_obj.snmpget(dot1qVlanStaticUntaggedPorts_oid+vid)
+        result = self.snmp_obj.snmpget(oid + '.' + vid)
         
         if not result[1]:
             return []
@@ -158,14 +104,12 @@ class SNMPPoller:
         #return port_untagged_dict
         return port_list
 
-    def vlan_get_tagged(self, vid) -> dict:
+    def vlan_get_tagged(self, vid : str, oid : str = VLAN_EGRESS_PORTS) -> dict:
         '''
         
         '''
 
-        dot1qVlanStaticEgressPorts_oid = ".1.3.6.1.2.1.17.7.1.4.3.1.2."
-
-        result = self.snmp_obj.snmpget(dot1qVlanStaticEgressPorts_oid+vid)
+        result = self.snmp_obj.snmpget(oid + '.' + vid)
 
         if not result[1]:
             return []
@@ -215,39 +159,10 @@ class SNMPPoller:
         
         return iface_list_dict
 
-    def _identify_interface_type(self, interface_type : str) -> tuple:
-
-        # Not sure about 'scope'
-        match interface_type:
-            case '1': # Undefined. Usually CPU.
-                return ("Other", "Other")
-            
-            case '6': # ethernetCsmacd (RFC 3635).
-                return ("ethernetCsmacd", "Port")
-            
-            case '24': # softwareLoopback
-                return ("softwareLoopback", "Loopback")
-            
-            case '53': # Proprietary Virtual/Internal
-                return ("propVirtual", "Proprietary")
-            
-            case '117': # gigabitEthernet. Obsolet. should return ethernetCsmacd
-                return ("gigabitEthernet", "Port")
-            
-            case '131': # tunnel
-                return ("tunnel", "Tunnel")
-            
-            case '135': # l2vlan 802.1Q
-                return ("l2vlan", "VLAN")
-            
-            case '136': # l3ipvlan. vlan "with IP"
-                return ("l3ipvlan", "VLAN")
-            
-            case '161': # IEEE 802.3ad Link Aggregate
-                return ("LAG 802.3ad", "Link Aggregation")
-            
-            case _:
-                return (interface_type, "Unknown")
+    def _identify_interface_type(self, interface_type: str) -> tuple:
+        if interface_type in INTERFACE_TYPE_MAP:
+            return INTERFACE_TYPE_MAP[interface_type]
+        return (interface_type, "Unknown")
 
     def interface_get_name(self, instance) -> str:
         """Get interface textual name via SNMP GET (mib-2.ifMIB.ifName.instance)
@@ -321,73 +236,17 @@ class SNMPPoller:
     # TOPOLOGY
     # ---------------
 
-    def lldp_normalize_chassis_id_subtype(self, chassis : tuple, chassis_id_subtype : str) -> tuple:
+    def lldp_normalize_chassis_id_subtype(self, chassis : tuple, subtype : str) -> tuple:
+        value, value_type = chassis
 
-        # Fix.
+        label, mode = LLDP_CHASSIS_SUBTYPE_MAP.get(
+            subtype,
+            (f"Unknown Subtype: {subtype}", None)
+        )
 
-        match chassis_id_subtype:
+        normalized = self._apply_normalization(value, value_type, mode)
 
-            case '1': # entPhysicalAlias (stack member?)
-
-                if chassis[1] == "STRING":
-                    chassis = self._normalize_snmp_string(chassis[0])
-                elif chassis[1] == "Hex-STRING":
-                    chassis = chassis[0].replace(" ", ":").strip('"')
-                
-                return (chassis, "chassisComponent")
-            
-            case '2': # ifAlias
-
-                if chassis[1] == "STRING":
-                    chassis = self._normalize_snmp_string(chassis[0])
-                elif chassis[1] == "Hex-STRING":
-                    chassis = convert_hex_to_utf8(chassis[0])
-                #     chassis = chassis[0].replace(" ", ":").strip('"')
-                
-                return (chassis, "interfaceAlias")
-            
-            case '3': # entPhysicalAlias (port)
-
-                if chassis[1] == "STRING":
-                    chassis = self._normalize_snmp_string(chassis[0])
-                elif chassis[1] == "Hex-STRING":
-                    chassis = chassis[0].replace(" ", ":").strip('"')
-                return (chassis, "portComponent")
-            
-            case '4': # unicast source address
-
-                if chassis[1] == "STRING":
-                    chassis = self._normalize_snmp_string(chassis[0])
-                elif chassis[1] == "Hex-STRING":
-                    chassis = chassis[0].replace(" ", ":").strip('"')
-                return (chassis, "macAddress")
-            
-            case '5': # network address
-
-                if chassis[1] == "STRING":
-                    chassis = self._normalize_snmp_string(chassis[0])
-                # elif local_chassis[1] == "Hex-STRING": # Haven't found this case yet.
-                #
-                return (chassis, "networkAddress")
-            
-            case '6': # ifName
-
-                if chassis[1] == "STRING":
-                    chassis = self._normalize_snmp_string(chassis[0])
-                # elif local_chassis[1] == "Hex-STRING": # Haven't found this case yet.
-                #
-                return (chassis, "interfaceName")
-            
-            case '7': # Locally Assigned
-
-                if chassis[1] == "STRING":
-                    chassis = self._normalize_snmp_string(chassis[0])
-                # elif local_chassis[1] == "Hex-STRING": # Haven't found this case yet.
-                # Probable conversion to utf8
-                return (chassis, "local")
-            
-            case _:
-                return (chassis[0], f"Unknown Subtype: {chassis_id_subtype}")
+        return (normalized, label)
 
     def lldp_normalize_port_subtype(self, port, port_subtype):
         

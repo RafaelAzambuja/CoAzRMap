@@ -1,5 +1,33 @@
 import re
 
+def normalize_result(value, value_type, mode):
+
+    value = value.strip('"').rstrip()
+
+    match value_type:
+        case 'STRING':
+            match mode: 
+                case "utf8":
+                    return value
+                
+                case "mac":
+                    value = ' '.join(f"{ord(c):02x}" for c in value)
+                    value = value.replace(" ", ":")
+                    return value
+
+        case 'Hex-STRING':
+            match mode:
+                case "mac":
+                    return value.replace(" ", ":")
+            
+                case "utf8":
+                    return convert_hex_to_utf8(value)
+
+                case _:
+                    return str(value) # ?
+
+        case _:
+            return ""
 
 def convert_hex_to_oid(hex_string) -> str:
 
