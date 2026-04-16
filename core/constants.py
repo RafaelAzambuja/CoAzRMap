@@ -16,6 +16,9 @@ VLAN_PORT_VID = "1.3.6.1.2.1.17.7.1.4.5.1.1"                # dot1qPvid
 VLAN_UNTAGGED_PORTS = ".1.3.6.1.2.1.17.7.1.4.3.1.4"         # dot1qVlanStaticUntaggedPorts
 VLAN_EGRESS_PORTS = ".1.3.6.1.2.1.17.7.1.4.3.1.2"           # dot1qVlanStaticEgressPorts
 
+#### FDB
+
+
 ## INTERFACES
 
 INTERFACE_NAME_OID = ".1.3.6.1.2.1.31.1.1.1.1"
@@ -40,6 +43,8 @@ INTERFACE_ALIAS_OID = ".1.3.6.1.2.1.31.1.1.1.18"
 
 LLDP_CHASSIS_ID_OID = ".1.0.8802.1.1.2.1.3.2.0"
 LLDP_CHASSIS_ID_SUBTYPE_OID = ".1.0.8802.1.1.2.1.3.1.0"
+LLDP_REMOTE_CHASSIS_ID_OID = ".1.0.8802.1.1.2.1.4.1.1.5"
+LLDP_REMOTE_CHASSIS_ID_SUBTYPE_OID = ".1.0.8802.1.1.2.1.4.1.1.4"
 
 LLDP_CHASSIS_SUBTYPE_MAP = {
     '1': ("chassisComponent", "mac"),
@@ -51,6 +56,9 @@ LLDP_CHASSIS_SUBTYPE_MAP = {
     '7': ("local", "utf8"),
 }
 
+LLDP_REMOTE_PORT_ID_OID = ".1.0.8802.1.1.2.1.4.1.1.7"
+LLDP_REMOTE_PORT_ID_SUBTYPE_OID = ".1.0.8802.1.1.2.1.4.1.1.6"
+
 LLDP_PORT_SUBTYPE_MAP = {
     '1': ("interfaceAlias", "utf8"),
     '2': ("portComponent", "mac"),
@@ -60,3 +68,9 @@ LLDP_PORT_SUBTYPE_MAP = {
     '6': ("agentCircuitId", "utf8"),
     '7': ("local", "utf8"),
 }
+
+
+### To study:
+
+# dot1qFdbDynamicCount. Possible metric for vlan usage?
+# dot1qVlanCurrentTable. Possibly contemplates GVRP.

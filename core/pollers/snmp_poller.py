@@ -252,77 +252,107 @@ class SNMPPoller:
 
         return value, value_type
 
-    def lldp_get_remote_entry_list(self) -> dict:
+    def lldp_get_remote_entry_list(self, oid : str = LLDP_REMOTE_CHASSIS_ID_OID) -> dict:
 
 
         # Remote Man Addr is unreliable
 
-        lldpRemChassisId_oid = ".1.0.8802.1.1.2.1.4.1.1.5"
-        lldpRemChassisIdSubtype_oid = ".1.0.8802.1.1.2.1.4.1.1.4."
-
         
-        lldp_rem_entry_list = self.snmp_obj.snmpwalk(lldpRemChassisId_oid)
+        lldp_rem_entry_list = self.snmp_obj.snmpwalk(oid)
 
-        regex = compile(
-            r"iso\.0\.8802\.1\.1\.2\.1\.4\.1\.1\.5\.(\d+)\.(\d+)\.(\d+)\s*=\s*(.*)"
-        )
+        # 1.0.8802.1.1.2.1.4.1.1.5.timeMark.locPort.lldpRemIndex
+        # "timeMark.localPort.remIndex"
+
+        # regex = compile(
+        #     r"iso\.0\.8802\.1\.1\.2\.1\.4\.1\.1\.5\.(\d+)\.(\d+)\.(\d+)\s*=\s*(.*)"
+        # )
 
         validos = {}
         if not lldp_rem_entry_list:
             return {}
+        
         for lldp_rem_entry in lldp_rem_entry_list:
-            m = regex.match(lldp_rem_entry)
-            if not m:
-                continue
+            parts = lldp_rem_entry.rsplit('.', 1)
+            time_mark = parts[-3]
+            local_port = parts[-2]
+            rem_index = parts[-1]
 
-            time_mark = str(m.group(1))
-            local_port = str(m.group(2))
-            rem_index = str(m.group(3))
+            # m = regex.match(lldp_rem_entry)
+            # if not m:
+            #     continue
+
+            # time_mark = str(m.group(1))
+            # local_port = str(m.group(2))
+            # rem_index = str(m.group(3))
 
             chave = (local_port, rem_index)
 
             if chave not in validos or time_mark > validos[chave]:
                 validos[chave] = time_mark
 
-        # 1.0.8802.1.1.2.1.4.1.1.5.timeMark.locPort.lldpRemIndex
-        # "timeMark.localPort.remIndex"
 
         data = {}
         for (local_port, rem_index), time_mark in validos.items():
 
-            remote_chassis = self.snmp_obj.snmpget(".1.0.8802.1.1.2.1.4.1.1.5."+f"{time_mark}.{local_port}.{rem_index}")
-            remote_chassis_subtype = self.snmp_obj.snmpget(lldpRemChassisIdSubtype_oid+f"{time_mark}.{local_port}.{rem_index}")[0]
+            remote_chassis = self.lldp_get_remote_chassis(f"{time_mark}.{local_port}.{rem_index}")
+
+
             remote_port = self.snmp_obj.snmpget(".1.0.8802.1.1.2.1.4.1.1.7."+f"{time_mark}.{local_port}.{rem_index}")
             remote_port_subtype = self.lldp_get_remote_port_id_subtype(f"{time_mark}.{local_port}.{rem_index}")[0]
 
-            remote_chassis_info = self.lldp_normalize_chassis_id_subtype(remote_chassis, remote_chassis_subtype)
-            remote_port_info = self.lldp_normalize_port_subtype(remote_port, remote_port_subtype)
+            # remote_chassis_info = self.lldp_normalize_chassis_id_subtype(remote_chassis, remote_chassis_subtype)
+            # remote_port_info = self.lldp_normalize_port_subtype(remote_port, remote_port_subtype)
 
             local_port = self.interface_get_name(local_port)
 
             data[local_port] = {
-                "Remote Host": remote_chassis_info[0],
-                "Remote Chassis Subtype": remote_chassis_info[1],
+                "Remote Host": remote_chassis[0],
+                "Remote Chassis Subtype": remote_chassis[1],
                 "Remote Port": remote_port_info[0],
                 "Remote Port Subtype": remote_port_info[1]
             }
 
         return data
 
+    def lldp_get_remote_chassis(self, instance : str, oid : str = LLDP_REMOTE_CHASSIS_ID_OID) -> tuple | None:
+        '''
 
-    def lldp_get_remote_port_id_subtype(self, instance):
+        '''
+
+        chassis_id, chassis_id_value_type = self.snmp_obj.snmpget(oid + '.' + instance)
+        chassis_subtype, chassis_subtype_value_type = self.lldp_get_remote_chassis_subtype()
+
+        mapped_type, mode = self.lldp_normalize_chassis_id_subtype(chassis_id, chassis_subtype)
+
+        chassis_id = normalize_result(chassis_id, chassis_id_value_type, mode)
+        
+        return chassis_id, mapped_type
+
+    def lldp_get_remote_chassis_subtype(self, instance : str, oid : str = LLDP_REMOTE_CHASSIS_ID_SUBTYPE_OID) -> str | None:
         '''
         
         '''
 
-        lldpRemPortIdSubtype_oid = ".1.0.8802.1.1.2.1.4.1.1.6."
+        value, value_type = self.snmp_obj.snmpget(oid + '.' + instance)
 
-        value, value_type = self.snmp_obj.snmpget(lldpRemPortIdSubtype_oid+instance)
-        value = self._normalize_snmp_string(value)
+        return value, value_type
 
-        return value
+    def lldp_get_remote_port_id_subtype(self, instance : str, oid : str = LLDP_REMOTE_PORT_ID_SUBTYPE_OID):
+        '''
+        
+        '''
 
-    def fdb_lookup(self, mac) -> tuple:
+
+        port_id, port_id_value_type = self.snmp_obj.snmpget(oid + '.' + instance)
+        port_id_subtype, port_id_subtype_value_type = self.lldp_get_remote_chassis_subtype()
+
+        mapped_type, mode = self.lldp_normalize_port_subtype(port_id, port_id_subtype)
+
+        port_id = normalize_result(port_id, port_id_value_type, mode)
+        
+        return port_id, mapped_type
+
+    def fdb_lookup(self, mac : str) -> tuple:
         '''
         
         '''
